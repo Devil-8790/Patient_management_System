@@ -1,0 +1,114 @@
+{
+    "P001": {
+        "id": "P001",
+        "name": "Ananya Varma",
+        "city": "Guwahati",
+        "age": 26,
+        "gender": "female",
+        "height": 1.6,
+        "weight": 85.0,
+        "bmi": 33.2,
+        "verdict": "Obese"
+    },
+    "P002": {
+        "name": "Ravi Mehta",
+        "city": "Mumbai",
+        "age": 29,
+        "gender": "male",
+        "height": 1.77,
+        "weight": 76,
+        "bmi": 24.22,
+        "verdict": "Overweight"
+    },
+    "P003": {
+        "id": "P003",
+        "name": "Sneha Kulkarni",
+        "city": "Pune",
+        "age": 23,
+        "gender": "female",
+        "height": 1.6,
+        "weight": 50.0,
+        "bmi": 19.53,
+        "verdict": "Normal weight"
+    },
+    "P004": {
+        "name": "Arjun Verma",
+        "city": "Bangalore",
+        "age": 40,
+        "gender": "male",
+        "height": 1.82,
+        "weight": 90,
+        "bmi": 27.17,
+        "verdict": "Overweight"
+    },
+    "P006": {
+        "name": "Ram",
+        "city": "gkp",
+        "age": 30,
+        "gender": "male",
+        "height": 1.6,
+        "weight": 60.0,
+        "bmi": 23.44,
+        "verdict": "Normal weight"
+    },
+    "P007": {
+        "name": "Ram",
+        "city": "gkp",
+        "age": 30,
+        "gender": "male",
+        "height": 1.6,
+        "weight": 60.0,
+        "bmi": 23.44,
+        "verdict": "Normal weight"
+    },
+    "P008": {
+        "name": "Roman",
+        "city": "Roam",
+        "age": 52,
+        "gender": "male",
+        "height": 1.9,
+        "weight": 75.0,
+        "bmi": 20.78,
+        "verdict": "Normal weight"
+    },
+    "P010": {
+        "name": "Rocky Bhai",
+        "city": "Aara",
+        "age": 30,
+        "gender": "male",
+        "height": 1.7,
+        "weight": 69.0,
+        "bmi": 23.88,
+        "verdict": "Normal weight"
+    },
+    "P009": {
+        "name": "Varun Maya",
+        "city": "Mumbai ",
+        "age": 28,
+        "gender": "male",
+        "height": 1.7,
+        "weight": 65.0,
+        "bmi": 22.49,
+        "verdict": "Normal weight"
+    },
+    "P005": {
+        "name": "Karan Sahani",
+        "city": "Hyderabad",
+        "age": 19,
+        "gender": "male",
+        "height": 1.5,
+        "weight": 56.0,
+        "bmi": 24.89,
+        "verdict": "Normal weight"
+    },
+    "P011": {
+        "name": "Suraj",
+        "city": "Hyderabad",
+        "age": 19,
+        "gender": "male",
+        "height": 1.51,
+        "weight": 57.0,
+        "bmi": 25.0,
+        "verdict": "Overweight"
+    }
+}

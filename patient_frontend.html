@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en" class="dark"> <!-- Default to dark mode, respects localStorage -->
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Management</title>
+    <!-- 
+      This config is necessary for "class" based dark mode to work.
+      It MUST come before the main tailwind script.
+    -->
+    <script>
+        window.tailwind = {
+            darkMode: 'class',
+        };
+        // Checks localStorage or OS preference for dark mode
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for a cleaner scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            /* gray-600 */
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #374151;
+            /* gray-700 */
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1f2937;
+            /* gray-800 */
+        }
+
+        /* Dark mode specific scrollbar */
+        html.dark ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            /* gray-600 */
+        }
+
+        html.dark ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+            /* gray-500 */
+        }
+
+        html.dark ::-webkit-scrollbar-track {
+            background: #1f2937;
+            /* gray-800 */
+        }
+
+        /* Light mode specific scrollbar */
+        html.light ::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            /* gray-300 */
+        }
+
+        html.light ::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
+            /* gray-400 */
+        }
+
+        html.light ::-webkit-scrollbar-track {
+            background: #f3f4f6;
+            /* gray-100 */
+        }
+
+        /* Style for the modal backdrop blur */
+        #modal-backdrop.hidden {
+            display: none;
+        }
+
+        #modal-backdrop {
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+
+        /* Custom toast animations */
+        @keyframes slideInUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+
+            to {
+                opacity: 0;
+            }
+        }
+
+        .toast-slide-in {
+            animation: slideInUp 0.3s ease-out forwards;
+        }
+
+        .toast-fade-out {
+            animation: fadeOut 0.5s ease-in forwards;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 dark:bg-gray-900 font-sans text-gray-900 dark:text-gray-100 transition-colors duration-300">
+
+    <!-- Global Container -->
+    <div class="min-h-screen flex flex-col">
+
+        <!-- Header -->
+        <header class="sticky top-0 z-30 w-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800 shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <!-- Logo/Title -->
+                    <div class="flex items-center space-x-3">
+                        <svg class="h-8 w-8 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+                        </svg>
+                        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Patient Management</h1>
+                    </div>
+                    <!-- Actions -->
+                    <div class="flex items-center space-x-4">
+                        <button id="theme-toggle" class="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800">
+                            <!-- Sun Icon (hidden in dark mode) -->
+                            <svg id="theme-icon-light" class="h-6 w-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M12 12a5 5 0 11-10 0 5 5 0 0110 0z"></path>
+                            </svg>
+                            <!-- Moon Icon (hidden in light mode) -->
+                            <svg id="theme-icon-dark" class="h-6 w-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                            </svg>
+                        </button>
+                        <button id="view-all-button" class="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 shadow-sm">
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                            </svg>
+                            <span>View All</span>
+                        </button>
+                        <button id="add-patient-button" class="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm">
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                            </svg>
+                            <span>Add Patient</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+            <!-- Controls and Table Container -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl overflow-hidden">
+
+                <!-- Control Bar -->
+                <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Search -->
+                        <div>
+                            <label for="search" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Find Patient by ID</label>
+                            <div class="mt-1 relative">
+                                <input type="text" id="search-input" class="w-full pl-3 pr-10 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g., P001">
+                                <button id="search-button" class="absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 hover:text-indigo-600">
+                                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <!-- Sort By -->
+                        <div>
+                            <label for="sort-by" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Sort By</label>
+                            <select id="sort-by" class="mt-1 block w-full py-2 px-3 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                <option value="height">Height</option>
+                                <option value="weight">Weight</option>
+                                <option value="bmi">BMI</option>
+                            </select>
+                        </div>
+                        <!-- Order -->
+                        <div>
+                            <label for="sort-order" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Order</label>
+                            <select id="sort-order" class="mt-1 block w-full py-2 px-3 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                <option value="asc">Ascending</option>
+                                <option value="desc">Descending</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Patient Table -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-50 dark:bg-gray-700">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ID</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Name</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Age</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Gender</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">City</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Height (m)</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Weight (kg)</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">BMI</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Verdict</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="patient-table-body" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            <!-- Empty state -->
+                            <tr id="empty-row">
+                                <td colspan="10" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                                    No patients loaded. Click "View All" to get started.
+                                </td>
+                            </tr>
+                            <!-- Patient rows will be injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal -->
+    <div id="modal-backdrop" class="fixed inset-0 z-40 bg-black/30 hidden flex items-center justify-center p-4">
+        <div id="modal" class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl transform transition-all scale-95 opacity-0">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+                <h3 id="modal-title" class="text-2xl font-semibold">Modal Title</h3>
+                <button id="modal-close-button" class="p-2 rounded-lg text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-200">
+                    <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <!-- Modal Body -->
+            <form id="modal-form">
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Patient ID -->
+                        <div>
+                            <label for="patient-id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Patient ID</label>
+                            <input type="text" id="patient-id" required class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100 dark:disabled:bg-gray-800" placeholder="e.g., P001">
+                        </div>
+                        <!-- Patient Name -->
+                        <div>
+                            <label for="patient-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
+                            <input type="text" id="patient-name" required class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <!-- City -->
+                        <div>
+                            <label for="patient-city" class="block text-sm font-medium text-gray-700 dark:text-gray-300">City</label>
+                            <input type="text" id="patient-city" required class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <!-- Age -->
+                        <div>
+                            <label for="patient-age" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Age</Vlabel>
+                            <input type="number" id="patient-age" required min="1" max="120" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <!-- Gender -->
+                        <div>
+                            <label for="patient-gender" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Gender</label>
+                            <select id="patient-gender" required class="mt-1 block w-full py-2 px-3 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <!-- Height -->
+                        <div>
+                            <label for="patient-height" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Height (m)</label>
+                            <input type="number" id="patient-height" required step="0.01" min="0" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <!-- Weight -->
+                        <div>
+                            <label for="patient-weight" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Weight (kg)</label>
+                            <input type="number" id="patient-weight" required step="0.1" min="0" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                    </div>
+                </div>
+                <!-- Modal Footer -->
+                <div class="flex items-center justify-end p-6 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-700 rounded-b-xl">
+                    <button id="modal-cancel-button" type="button" class="px-5 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 shadow-sm">
+                        Cancel
+                    </button>
+                    <button id="modal-submit-button" type="submit" class="ml-3 px-5 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirm-backdrop" class="fixed inset-0 z-50 bg-black/30 hidden flex items-center justify-center p-4">
+        <div id="confirm-modal" class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-sm transform transition-all scale-95 opacity-0">
+            <div class="p-6">
+                <div class="flex items-start space-x-4">
+                    <div class="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/50 sm:h-10 sm:w-10">
+                        <svg class="h-6 w-6 text-red-600 dark:text-red-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Delete Patient</h3>
+                        <p id="confirm-message" class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                            Are you sure you want to delete this patient? This action cannot be undone.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center justify-end p-4 space-x-3 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-700 rounded-b-xl">
+                <button id="confirm-cancel-button" type="button" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 shadow-sm">
+                    Cancel
+                </button>
+                <button id="confirm-delete-button" type="button" class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 shadow-sm">
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 w-full max-w-sm hidden">
+        <div id="toast-content" class="flex items-center w-full p-4 rounded-xl shadow-2xl space-x-3">
+            <div id="toast-icon" class="flex-shrink-0">
+                <!-- Icon will be injected here -->
+            </div>
+            <div id="toast-message" class="flex-1 text-sm font-medium">
+                Message here
+            </div>
+            <button id="toast-close-button" class="p-1 -m-1 rounded-lg">
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // API Configuration
+        const API_URL = 'http://127.0.0.1:8000';
+
+        // DOM Elements
+        const viewAllButton = document.getElementById('view-all-button');
+        const addPatientButton = document.getElementById('add-patient-button');
+        const searchButton = document.getElementById('search-button');
+        const searchInput = document.getElementById('search-input');
+        const sortBySelect = document.getElementById('sort-by');
+        const sortOrderSelect = document.getElementById('sort-order');
+        const tableBody = document.getElementById('patient-table-body');
+        const emptyRow = document.getElementById('empty-row');
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeIconLight = document.getElementById('theme-icon-light');
+        const themeIconDark = document.getElementById('theme-icon-dark');
+
+        // Modal Elements
+        const modalBackdrop = document.getElementById('modal-backdrop');
+        const modal = document.getElementById('modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalForm = document.getElementById('modal-form');
+        const modalCloseButton = document.getElementById('modal-close-button');
+        const modalCancelButton = document.getElementById('modal-cancel-button');
+        const modalSubmitButton = document.getElementById('modal-submit-button');
+
+        // Confirmation Modal Elements
+        const confirmBackdrop = document.getElementById('confirm-backdrop');
+        const confirmModal = document.getElementById('confirm-modal');
+        const confirmMessage = document.getElementById('confirm-message');
+        const confirmCancelButton = document.getElementById('confirm-cancel-button');
+        const confirmDeleteButton = document.getElementById('confirm-delete-button');
+
+        // Toast Elements
+        const toast = document.getElementById('toast');
+        const toastContent = document.getElementById('toast-content');
+        const toastIcon = document.getElementById('toast-icon');
+        const toastMessage = document.getElementById('toast-message');
+        const toastCloseButton = document.getElementById('toast-close-button');
+
+        // Global State
+        let currentPatientId = null;
+        let toastTimeout = null;
+        let confirmResolve = null;
+
+        // --- Utility Functions ---
+
+        function calculateBMI(height, weight) {
+            if (!height || !weight || height <= 0 || weight <= 0) return 0;
+            return (weight / (height * height)).toFixed(2);
+        }
+
+        function getVerdict(bmi) {
+            if (bmi <= 0) return 'N/A';
+            if (bmi < 18.5) return 'Underweight';
+            if (bmi < 25) return 'Normal weight';
+            if (bmi < 30) return 'Overweight';
+            return 'Obese';
+        }
+
+        function updateThemeIcon(isDarkMode) {
+            if (isDarkMode) {
+                themeIconLight.classList.add('hidden');
+                themeIconDark.classList.remove('hidden');
+            } else {
+                themeIconLight.classList.remove('hidden');
+                themeIconDark.classList.add('hidden');
+            }
+        }
+
+        // --- Toast Notification ---
+
+        function showToast(message, isSuccess = true) {
+            // Clear any existing toast
+            if (toastTimeout) {
+                clearTimeout(toastTimeout);
+                toast.classList.add('hidden');
+            }
+
+            toastMessage.textContent = message;
+
+            if (isSuccess) {
+                toastContent.className = "flex items-center w-full p-4 rounded-xl shadow-2xl space-x-3 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100";
+                toastIcon.innerHTML = `
+                    <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    </svg>`;
+            } else {
+                toastContent.className = "flex items-center w-full p-4 rounded-xl shadow-2xl space-x-3 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100";
+                toastIcon.innerHTML = `
+                    <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                    </svg>`;
+            }
+
+            toast.classList.remove('hidden');
+            toast.classList.remove('toast-fade-out');
+            toast.classList.add('toast-slide-in');
+
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('toast-slide-in');
+                toast.classList.add('toast-fade-out');
+                setTimeout(() => {
+                    toast.classList.add('hidden');
+                    toastTimeout = null;
+                }, 500); // Wait for fade-out to finish
+            }, 3000);
+        }
+
+        // --- Confirmation Modal ---
+
+        function showConfirmation(message) {
+            return new Promise((resolve) => {
+                confirmResolve = resolve;
+                confirmMessage.textContent = message;
+                confirmBackdrop.classList.remove('hidden');
+                confirmModal.classList.add('scale-100', 'opacity-100');
+                confirmModal.classList.remove('scale-95', 'opacity-0');
+            });
+        }
+
+        function hideConfirmation() {
+            confirmModal.classList.remove('scale-100', 'opacity-100');
+            confirmModal.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                confirmBackdrop.classList.add('hidden');
+                if (confirmResolve) {
+                    confirmResolve(false); // Resolve as false if canceled
+                    confirmResolve = null;
+                }
+            }, 150);
+        }
+
+        // --- Main Modal ---
+
+        function showModal() {
+            modalBackdrop.classList.remove('hidden');
+            modal.classList.add('scale-100', 'opacity-100');
+            modal.classList.remove('scale-95', 'opacity-0');
+        }
+
+        function hideModal() {
+            modal.classList.remove('scale-100', 'opacity-100');
+            modal.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modalBackdrop.classList.add('hidden');
+            }, 150); // Match transition duration
+        }
+
+        function populateModal(patient) {
+            document.getElementById('patient-id').value = patient.id || '';
+            document.getElementById('patient-id').readOnly = true;
+            document.getElementById('patient-name').value = patient.name || '';
+            document.getElementById('patient-city').value = patient.city || '';
+            document.getElementById('patient-age').value = patient.age || '';
+            document.getElementById('patient-gender').value = patient.gender || 'male';
+            document.getElementById('patient-height').value = patient.height || '';
+            document.getElementById('patient-weight').value = patient.weight || '';
+        }
+
+        // --- API Functions ---
+
+        async function fetchWithTimeout(resource, options = {}, timeout = 5000) {
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), timeout);
+            try {
+                const response = await fetch(resource, {
+                    ...options,
+                    signal: controller.signal
+                });
+                clearTimeout(id);
+                return response;
+            } catch (error) {
+                clearTimeout(id);
+                if (error.name === 'AbortError') {
+                    throw new Error('Request timed out. Is the backend server running?');
+                }
+                throw error;
+            }
+        }
+
+        async function apiGetView() {
+            try {
+                const response = await fetchWithTimeout(`${API_URL}/view`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                // Manually add 'id' and calculate BMI/Verdict
+                return Object.keys(data).map(id => {
+                    const patient = data[id];
+                    patient.id = id;
+                    patient.bmi = calculateBMI(patient.height, patient.weight);
+                    patient.verdict = getVerdict(patient.bmi);
+                    return patient;
+                });
+            } catch (error) {
+                console.error("apiGetView Error:", error);
+                throw new Error(error.message || 'Failed to fetch. Is the backend server running and does it have CORS enabled?');
+            }
+        }
+
+        async function apiGetSort(sortBy, order) {
+            try {
+                const response = await fetchWithTimeout(`${API_URL}/sort?sort_by=${sortBy}&order=${order}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                // Data is a list, just calculate BMI/Verdict
+                return data.map(patient => {
+                    patient.bmi = calculateBMI(patient.height, patient.weight);
+                    patient.verdict = getVerdict(patient.bmi);
+                    return patient;
+                });
+            } catch (error) {
+                console.error("apiGetSort Error:", error);
+                throw new Error(error.message || 'Failed to sort patients.');
+            }
+        }
+
+        async function apiGetById(patientId) {
+            try {
+                const response = await fetchWithTimeout(`${API_URL}/patients/${patientId}`);
+                if (response.status === 404) {
+                    throw new Error('Patient not found.');
+                }
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                // Manually calculate BMI/Verdict, ID is already added by backend
+                data.bmi = calculateBMI(data.height, data.weight);
+                data.verdict = getVerdict(data.bmi);
+                return data;
+            } catch (error) {
+                console.error("apiGetById Error:", error);
+                throw error; // Re-throw to be handled by caller
+            }
+        }
+
+        async function apiCreate(data) {
+            try {
+                const response = await fetchWithTimeout(`${API_URL}/create`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data),
+                });
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.detail || 'Failed to create patient.');
+                }
+                return result.message;
+            } catch (error) {
+                console.error("apiCreate Error:", error);
+                throw error;
+            }
+        }
+
+        async function apiUpdate(patientId, data) {
+            // --- FIX ---
+            // Add a guard to prevent "PUT /edit/undefined"
+            if (!patientId || patientId === 'undefined') {
+                console.error("apiUpdate Error: Invalid patientId:", patientId);
+                throw new Error("Invalid Patient ID. Cannot update.");
+            }
+            // --- END FIX ---
+            try {
+                const response = await fetchWithTimeout(`${API_URL}/edit/${patientId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data),
+                });
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.detail || 'Failed to update patient.');
+                }
+                return result.message;
+            } catch (error) {
+                console.error("apiUpdate Error:", error);
+                throw error;
+            }
+        }
+
+        async function apiDelete(patientId) {
+            try {
+                const response = await fetchWithTimeout(`${API_URL}/delete/${patientId}`, {
+                    method: 'DELETE',
+                });
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.detail || 'Failed to delete patient.');
+                }
+                return result.message;
+            } catch (error) {
+                console.error("apiDelete Error:", error);
+                throw error;
+            }
+        }
+
+
+        // --- Table Rendering ---
+
+        function renderTable(patients) {
+            tableBody.innerHTML = ''; // Clear existing rows
+
+            if (!patients || patients.length === 0) {
+                tableBody.appendChild(emptyRow);
+                return;
+            }
+
+            patients.forEach((patient, index) => {
+                const row = document.createElement('tr');
+                // Zebra striping
+                row.className = index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-800/50';
+
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">${patient.id || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">${patient.name || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">${patient.age || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 capitalize">${patient.gender || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">${patient.city || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">${patient.height || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">${patient.weight || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">${patient.bmi || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">${patient.verdict || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-3">
+                        <button class="edit-btn text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300">Edit</button>
+                        <button class="delete-btn text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300">Delete</button>
+                    </td>
+                `;
+
+                // Add event listeners
+                const editButton = row.querySelector('.edit-btn');
+                editButton.onclick = () => handleEditClick(patient.id);
+
+                const deleteButton = row.querySelector('.delete-btn');
+                deleteButton.onclick = () => handleDeleteClick(patient.id, patient.name);
+
+                tableBody.appendChild(row);
+            });
+        }
+
+
+        // --- Event Handlers ---
+
+        async function handleViewAll() {
+            try {
+                const patients = await apiGetView();
+                renderTable(patients);
+            } catch (error) {
+                showToast(error.message, false);
+                renderTable([]);
+            }
+        }
+
+        async function handleSort() {
+            try {
+                const sortBy = sortBySelect.value;
+                const order = sortOrderSelect.value;
+                const patients = await apiGetSort(sortBy, order);
+                renderTable(patients);
+            } catch (error) {
+                showToast(error.message, false);
+                renderTable([]);
+            }
+        }
+
+        async function handleSearch() {
+            const patientId = searchInput.value;
+            if (!patientId) {
+                showToast("Please enter a Patient ID to search.", false);
+                return;
+            }
+            try {
+                const patient = await apiGetById(patientId);
+                renderTable([patient]);
+            } catch (error) {
+                showToast(error.message, false);
+                renderTable([]);
+            }
+        }
+
+        async function handleEditClick(patientId) {
+            // --- FIX ---
+            // Validate the patientId BEFORE trying to use it
+            if (!patientId || patientId === 'undefined') {
+                console.error("handleEditClick Error: Invalid patientId:", patientId);
+                showToast("Cannot edit patient: Invalid ID.", false);
+                return;
+            }
+            // --- END FIX ---
+
+            currentPatientId = patientId;
+            try {
+                const patient = await apiGetById(patientId);
+                modalTitle.textContent = `Edit Patient: ${patient.name}`;
+                populateModal(patient);
+                showModal();
+            } catch (error) {
+                showToast(`Error: ${error.message}`, false);
+                currentPatientId = null; // Reset if fetch fails
+            }
+        }
+
+        async function handleDeleteClick(patientId, patientName) {
+            const confirmed = await showConfirmation(`Are you sure you want to delete ${patientName || 'this patient'} (ID: ${patientId})? This action cannot be undone.`);
+
+            if (confirmed) {
+                try {
+                    const message = await apiDelete(patientId);
+                    showToast(message, true);
+                    handleViewAll(); // Refresh table
+                } catch (error) {
+                    showToast(error.message, false);
+                }
+            }
+        }
+
+        async function handleModalSubmit(event) {
+            event.preventDefault();
+
+            // This field is disabled for 'Edit', but enabled for 'Add'
+            const patientId = document.getElementById('patient-id').value;
+            
+            const updateData = {
+                name: document.getElementById('patient-name').value,
+                city: document.getElementById('patient-city').value,
+                age: parseInt(document.getElementById('patient-age').value),
+                gender: document.getElementById('patient-gender').value,
+                height: parseFloat(document.getElementById('patient-height').value),
+                weight: parseFloat(document.getElementById('patient-weight').value),
+            };
+            
+            // Basic validation
+            if (!updateData.name || !patientId || !updateData.city || !updateData.age || !updateData.height || !updateData.weight) {
+                showToast("Please fill out all fields correctly.", false);
+                return;
+            }
+            
+            try {
+                let message;
+                if (currentPatientId) {
+                    // This is an EDIT
+                    message = await apiUpdate(currentPatientId, updateData);
+                } else {
+                    // This is a CREATE
+                    const createData = { id: patientId, ...updateData };
+                    message = await apiCreate(createData);
+                }
+                showToast(message, true);
+            } catch (error) {
+                showToast(error.message, false);
+            } finally {
+                currentPatientId = null;
+                hideModal();
+                handleViewAll(); // Refresh table
+            }
+        }
+
+        function handleThemeToggle() {
+            const isDarkMode = document.documentElement.classList.toggle('dark');
+            localStorage.theme = isDarkMode ? 'dark' : 'light';
+            updateThemeIcon(isDarkMode);
+        }
+
+        // --- Event Listeners ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set initial theme icon
+            updateThemeIcon(document.documentElement.classList.contains('dark'));
+
+            // Main controls
+            viewAllButton.addEventListener('click', handleViewAll);
+            addPatientButton.addEventListener('click', () => {
+                currentPatientId = null;
+                modalForm.reset();
+                document.getElementById('patient-id').readOnly = false;
+                modalTitle.textContent = "Add New Patient";
+                showModal();
+            });
+            
+            searchButton.addEventListener('click', handleSearch);
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') handleSearch();
+            });
+            sortBySelect.addEventListener('change', handleSort);
+            sortOrderSelect.addEventListener('change', handleSort);
+
+            // Modal controls
+            modalForm.addEventListener('submit', handleModalSubmit);
+            modalCloseButton.addEventListener('click', hideModal);
+            modalCancelButton.addEventListener('click', hideModal);
+            modalBackdrop.addEventListener('click', (e) => {
+                if (e.target === modalBackdrop) hideModal();
+            });
+
+            // Confirmation controls
+            confirmCancelButton.addEventListener('click', hideConfirmation);
+            confirmDeleteButton.addEventListener('click', () => {
+                if (confirmResolve) {
+                    confirmResolve(true);
+                    confirmResolve = null;
+                }
+                hideConfirmation();
+            });
+            confirmBackdrop.addEventListener('click', (e) => {
+                if (e.target === confirmBackdrop) hideConfirmation();
+            });
+            
+            // Toast controls
+            toastCloseButton.addEventListener('click', () => {
+                if (toastTimeout) clearTimeout(toastTimeout);
+                toast.classList.add('hidden');
+            });
+
+            // Theme toggle
+            themeToggle.addEventListener('click', handleThemeToggle);
+
+            // Load all patients on page load
+            handleViewAll();
+        });
+    </script>
+</body>
+
+</html>
+
